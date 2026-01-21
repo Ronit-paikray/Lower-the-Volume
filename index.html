@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lower the Volume</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🔉</text></svg>">
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            font-family: monospace;
+            color: #fff;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .emoji {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .text {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        .hint {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .disguise {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        .disguise.active {
+            display: flex;
+        }
+
+        .spinner {
+            border: 4px solid #333;
+            border-top: 4px solid #666;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 18px;
+            color: #666;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #333;
+            transition: background 0.3s;
+        }
+
+        .status-indicator.active {
+            background: #0f0;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="status-indicator"></div>
+    
+    <div class="emoji">🔉</div>
+    <div class="text">Lower the Volume</div>
+    <div class="hint">tap to activate</div>
+
+    <div class="disguise">
+        <div class="spinner"></div>
+        <div class="loading-text">Connecting...</div>
+    </div>
+
+    <script>
+        let audioContext = null;
+        let mediaStream = null;
+        let isActive = false;
+        let shakeThreshold = 15;
+        let lastX = 0, lastY = 0, lastZ = 0;
+
+        // Haptic feedback function
+        function vibrate(duration = 50) {
+            if (navigator.vibrate) {
+                navigator.vibrate(duration);
+            }
+        }
+
+        // Panic stop function
+        function panicStop() {
+            if (!isActive) return;
+            
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+            }
+            if (audioContext) {
+                audioContext.close();
+            }
+            
+            isActive = false;
+            document.querySelector('.disguise').classList.remove('active');
+            document.querySelector('.status-indicator').classList.remove('active');
+            document.querySelector('.hint').textContent = 'tap to activate';
+            document.querySelector('.hint').style.display = 'block';
+            
+            vibrate(100);
+        }
+
+        // Shake detection
+        if (window.DeviceMotionEvent) {
+            window.addEventListener('devicemotion', (e) => {
+                if (!isActive) return;
+                
+                const acc = e.accelerationIncludingGravity;
+                if (!acc) return;
+
+                const x = acc.x || 0;
+                const y = acc.y || 0;
+                const z = acc.z || 0;
+
+                const deltaX = Math.abs(x - lastX);
+                const deltaY = Math.abs(y - lastY);
+                const deltaZ = Math.abs(z - lastZ);
+
+                if (deltaX > shakeThreshold || deltaY > shakeThreshold || deltaZ > shakeThreshold) {
+                    panicStop();
+                }
+
+                lastX = x;
+                lastY = y;
+                lastZ = z;
+            });
+        }
+
+        // Swipe down detection
+        let touchStartY = 0;
+        document.body.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+        });
+
+        document.body.addEventListener('touchend', (e) => {
+            if (!isActive) return;
+            
+            const touchEndY = e.changedTouches[0].clientY;
+            const swipeDistance = touchEndY - touchStartY;
+            
+            if (swipeDistance > 100) {
+                panicStop();
+            }
+        });
+
+        // Main activation
+        document.body.addEventListener('click', async () => {
+            if (isActive) {
+                panicStop();
+                return;
+            }
+
+            try {
+                vibrate(50);
+                
+                audioContext = new AudioContext();
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const source = audioContext.createMediaStreamSource(mediaStream);
+                const delayNode = audioContext.createDelay(5);
+                const gainNode = audioContext.createGain();
+                
+                delayNode.delayTime.value = 2;
+                gainNode.gain.value = 0.8;
+                
+                source.connect(delayNode);
+                delayNode.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                isActive = true;
+                document.querySelector('.hint').style.display = 'none';
+                document.querySelector('.disguise').classList.add('active');
+                document.querySelector('.status-indicator').classList.add('active');
+                
+                vibrate(100);
+            } catch (err) {
+                console.error('Failed to start:', err);
+                vibrate([50, 50, 50]);
+            }
+        }, { passive: true });
+    </script>
+</body>
+
+</html>
