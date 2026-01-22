@@ -4,9 +4,15 @@ A stealth speech jammer app that uses delayed auditory feedback to disrupt someo
 
 ## The Story
 
-I was at Bombay airport. Some dude was watching reels on full volume and laughing loudly. Asking nicely doesn't work anymore. Me being me, didn't have the courage to speak up.
+I travel from Kesinga to Bhubaneswar by train for college. Every trip turns into a community entertainment system: people talking loudly, and someone watching reels on full volume, laughing without earphones — because clearly this coach is their personal living room.
 
-So I built a tiny app that plays back the same audio it hears, delayed by ~2 seconds. Asked Claude, it spat out a working version in one prompt. Surprisingly **WORKS**.
+It's a night journey, but apparently social etiquette and basic public manners go to sleep earlier than everyone else.
+
+I don't argue with strangers, and asking politely is treated like a suggestion, not a rule. So I built a tiny tool that feeds their own voice and noise back to them after 2 seconds.
+
+Their brain hears itself, glitches for a moment, and suddenly everyone remembers how volume buttons work.
+
+No AI. No confrontation. Just technology fixing what basic etiquette failed to install. 😌
 
 ## The Science
 
